@@ -1,6 +1,24 @@
 # mcp-redis-cluster
 
-Docker image build that extends **[redis/mcp-redis](https://github.com/redis/mcp-redis)** with **Redis Cluster**–safe behaviour. Use it when `REDIS_CLUSTER_MODE=true` and redis-py returns a **dict** cursor from `SCAN` (which breaks the upstream `scan_keys` / `scan_all_keys` tools).
+Docker image extending **[redis/mcp-redis](https://github.com/redis/mcp-redis)** with **Redis Cluster**–safe MCP tools (fixes `SCAN` dict-cursor issues and related cluster semantics).
+
+## Recommended: use the published image (GHCR)
+
+**Default image to run:**
+
+`ghcr.io/ishaburov/mcp-redis-cluster:latest`
+
+Built automatically on every push to `main` (see [`.github/workflows/docker-publish.yml`](.github/workflows/docker-publish.yml)).
+
+```bash
+docker pull ghcr.io/ishaburov/mcp-redis-cluster:latest
+```
+
+If the package is **private**, log in first:
+
+```bash
+echo YOUR_GITHUB_TOKEN | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+```
 
 ## Fixes vs upstream `mcp-redis`
 
@@ -13,57 +31,19 @@ Docker image build that extends **[redis/mcp-redis](https://github.com/redis/mcp
 | `rename` | Pre-checks `cluster_keyslot`; rejects different slots with a clear message. |
 | Pub/sub tools | Docstrings clarify MCP limitations (no message streaming to the agent). |
 | `json_*`, RediSearch / vector tools | Enriched errors on `unknown command` (plain cluster often has no RedisJSON/RediSearch). |
-| Connection | **`REDIS_CLUSTER_NODES`**: comma-separated `host:port` list → `RedisCluster(startup_nodes=...)` so discovery is not tied to a single endpoint. If unset, **`REDIS_HOST`** + **`REDIS_PORT`** are used as one startup node (upstream behaviour). |
+| Connection | **`REDIS_CLUSTER_NODES`**: comma-separated `host:port` → multiple **startup nodes**. If unset, **`REDIS_HOST`** + **`REDIS_PORT`**. |
 
 ## Configuration (cluster)
 
 | Variable | Meaning |
 |----------|---------|
 | `REDIS_CLUSTER_MODE` | `true` / `1` / `t` to use `RedisCluster`. |
-| `REDIS_CLUSTER_NODES` | Optional. Example: `redis-cluster:7000,redis-cluster:7001,...` — **startup nodes** for the client (redis-py discovers the full topology from them). |
-| `REDIS_HOST` / `REDIS_PORT` | Used when `REDIS_CLUSTER_NODES` is empty; default port is also used for host-only entries in `REDIS_CLUSTER_NODES` (`hostname` without `:port`). |
+| `REDIS_CLUSTER_NODES` | Optional. Example: `redis-cluster:7000,redis-cluster:7001,...` — **startup nodes** (redis-py discovers the full topology). |
+| `REDIS_HOST` / `REDIS_PORT` | Used when `REDIS_CLUSTER_NODES` is empty; default port for host-only entries in `REDIS_CLUSTER_NODES`. |
 
-## Prebuilt image (GHCR)
+## Cursor / MCP client (copy-paste)
 
-After each push to `main`, GitHub Actions builds and pushes:
-
-`ghcr.io/ishaburov/mcp-redis-cluster:latest`
-
-Pull (package must be **public** or you must `docker login ghcr.io`):
-
-```bash
-docker pull ghcr.io/ishaburov/mcp-redis-cluster:latest
-```
-
-Use that image in MCP / Compose instead of a local build. Tag `v1.2.3` also publishes semver tags.
-
-## Build locally
-
-```bash
-git clone https://github.com/ishaburov/mcp-redis-cluster.git
-cd mcp-redis-cluster
-docker build -t redis-mcp-cluster:latest .
-```
-
-Override the upstream pin if needed:
-
-```bash
-docker build --build-arg MCP_REDIS_SHA=<commit_sha> -t redis-mcp-cluster:latest .
-```
-
-## Run (example: Docker Compose network)
-
-```bash
-docker run -i --rm \
-  --network your_redis_network \
-  -e REDIS_CLUSTER_MODE=true \
-  -e REDIS_CLUSTER_NODES=redis-cluster:7000,redis-cluster:7001,redis-cluster:7002,redis-cluster:7003,redis-cluster:7004,redis-cluster:7005 \
-  redis-mcp-cluster:latest
-```
-
-## Cursor / MCP client
-
-Point your MCP server config at the image you built, for example:
+Use the **GHCR** image name as the last argument to `docker run`:
 
 ```json
 {
@@ -71,21 +51,54 @@ Point your MCP server config at the image you built, for example:
     "redis": {
       "command": "docker",
       "args": [
-        "run", "-i", "--rm",
-        "--network", "your_network",
-        "-e", "REDIS_CLUSTER_MODE=true",
-        "-e", "REDIS_CLUSTER_NODES=redis-cluster:7000,redis-cluster:7001,redis-cluster:7002,redis-cluster:7003,redis-cluster:7004,redis-cluster:7005",
-        "redis-mcp-cluster:latest"
+        "run",
+        "-i",
+        "--rm",
+        "--network",
+        "your_docker_network",
+        "-e",
+        "REDIS_CLUSTER_MODE=true",
+        "-e",
+        "REDIS_CLUSTER_NODES=redis-cluster:7000,redis-cluster:7001,redis-cluster:7002,redis-cluster:7003,redis-cluster:7004,redis-cluster:7005",
+        "ghcr.io/ishaburov/mcp-redis-cluster:latest"
       ]
     }
   }
 }
 ```
 
+Replace `your_docker_network` with the network your Redis Cluster containers use (e.g. Compose project network).
+
+## Run manually (same image)
+
+```bash
+docker run -i --rm \
+  --network your_docker_network \
+  -e REDIS_CLUSTER_MODE=true \
+  -e REDIS_CLUSTER_NODES=redis-cluster:7000,redis-cluster:7001,redis-cluster:7002,redis-cluster:7003,redis-cluster:7004,redis-cluster:7005 \
+  ghcr.io/ishaburov/mcp-redis-cluster:latest
+```
+
+## Build locally (optional)
+
+Only if you need a custom `MCP_REDIS_SHA` or local patches:
+
+```bash
+git clone https://github.com/ishaburov/mcp-redis-cluster.git
+cd mcp-redis-cluster
+docker build -t redis-mcp-cluster:local .
+```
+
+```bash
+docker build --build-arg MCP_REDIS_SHA=<commit_sha> -t redis-mcp-cluster:local .
+```
+
+Releases tagged `v*` on GitHub also produce semver tags on GHCR (e.g. `ghcr.io/ishaburov/mcp-redis-cluster:1.0.0`).
+
 ## Upstream alignment
 
 - Base: `https://github.com/redis/mcp-redis` at commit `MCP_REDIS_SHA` (see `Dockerfile`).
-- Prefer **merging these changes into `redis/mcp-redis`** long term so a separate image is unnecessary.
+- Long term, merging into **`redis/mcp-redis`** would avoid a separate image.
 
 ## License
 
