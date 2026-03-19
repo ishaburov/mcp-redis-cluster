@@ -1,0 +1,8 @@
+This repository provides a Docker build that downloads a pinned commit of
+https://github.com/redis/mcp-redis (MIT) and overlays Python modules for
+Redis Cluster compatibility.
+
+Upstream copyright: Redis, Inc. — see LICENSE.
+
+Contributions to the overlay files in this repository are welcome under the
+same MIT license unless stated otherwise in a pull request.
