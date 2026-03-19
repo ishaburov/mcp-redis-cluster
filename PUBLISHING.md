@@ -1,30 +1,40 @@
 # Publishing to GitHub
 
-The remote `origin` is set to `https://github.com/redis/mcp-redis-cluster.git`.
+The intended remote is `https://github.com/redis/mcp-redis-cluster.git`.
 
-`git push` fails until that repository **exists** and your account has **write access** to the `redis` organization.
+## Why push can fail
 
-## Option A — Repository under `redis` org (intended URL)
+1. **Repository does not exist** — GitHub returns `Repository not found` until an **empty** repo is created (or you use `gh repo create` to create it).
+2. **No credentials** — In this environment, `gh` needs **`GH_TOKEN`** (or run `gh auth login` in your own terminal).
 
-1. Ask a GitHub org admin for **redis** to create a new **public** repository named `mcp-redis-cluster` (empty, no README).
-2. Grant your user **push** access (or merge via pull request from a fork).
-3. From this folder:
+## Publish with GitHub CLI (recommended)
+
+From the repository root, after [creating a personal access token](https://github.com/settings/tokens) with `repo` scope (or fine-grained: contents read/write):
 
 ```bash
 cd mcp-redis-cluster
+export GH_TOKEN=ghp_your_token_here
+
+# If the repo does NOT exist yet under YOUR user (replace YOUR_USER):
+gh repo create YOUR_USER/mcp-redis-cluster --public --source=. --remote=origin --push
+
+# If an empty repo already exists at redis/mcp-redis-cluster and you have org access:
+git remote set-url origin https://github.com/redis/mcp-redis-cluster.git
 git push -u origin main
 ```
 
-## Option B — Your fork first
+Creating a repository **inside the `redis` organisation** requires an org owner/admin to create `mcp-redis-cluster` first, or to grant you permission to create repos there.
 
-1. Create `https://github.com/<you>/mcp-redis-cluster` (empty).
-2. `git remote set-url origin https://github.com/<you>/mcp-redis-cluster.git`
-3. `git push -u origin main`
-4. Open a pull request to `redis/mcp-redis-cluster` when the upstream repo exists.
+## Publish with SSH
 
-## Verify
+```bash
+git remote set-url origin git@github.com:redis/mcp-redis-cluster.git
+git push -u origin main
+```
 
-After push, the default build command is:
+(Ensure the empty repo exists and your SSH key is added to GitHub.)
+
+## After a successful push
 
 ```bash
 docker build -t redis-mcp-cluster:latest .
