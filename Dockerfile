@@ -22,6 +22,8 @@ RUN git clone https://github.com/redis/mcp-redis.git /tmp/mcp-redis \
     && cp -a /tmp/mcp-redis/. /app/ \
     && rm -rf /tmp/mcp-redis
 
+COPY config.py /app/src/common/config.py
+COPY connection.py /app/src/common/connection.py
 COPY redis_cluster_support.py /app/src/common/redis_cluster_support.py
 COPY misc.py /app/src/tools/misc.py
 COPY server_management.py /app/src/tools/server_management.py
