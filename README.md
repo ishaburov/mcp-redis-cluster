@@ -23,7 +23,21 @@ Docker image build that extends **[redis/mcp-redis](https://github.com/redis/mcp
 | `REDIS_CLUSTER_NODES` | Optional. Example: `redis-cluster:7000,redis-cluster:7001,...` — **startup nodes** for the client (redis-py discovers the full topology from them). |
 | `REDIS_HOST` / `REDIS_PORT` | Used when `REDIS_CLUSTER_NODES` is empty; default port is also used for host-only entries in `REDIS_CLUSTER_NODES` (`hostname` without `:port`). |
 
-## Build
+## Prebuilt image (GHCR)
+
+After each push to `main`, GitHub Actions builds and pushes:
+
+`ghcr.io/ishaburov/mcp-redis-cluster:latest`
+
+Pull (package must be **public** or you must `docker login ghcr.io`):
+
+```bash
+docker pull ghcr.io/ishaburov/mcp-redis-cluster:latest
+```
+
+Use that image in MCP / Compose instead of a local build. Tag `v1.2.3` also publishes semver tags.
+
+## Build locally
 
 ```bash
 git clone https://github.com/ishaburov/mcp-redis-cluster.git

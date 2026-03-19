@@ -4,7 +4,7 @@ FROM python:3.14-slim
 
 LABEL io.modelcontextprotocol.server.name="io.github.redis/mcp-redis"
 LABEL org.opencontainers.image.description="Redis MCP + Redis Cluster compatibility (overlay)"
-LABEL org.opencontainers.image.source="https://github.com/redis/mcp-redis-cluster"
+LABEL org.opencontainers.image.source="https://github.com/ishaburov/mcp-redis-cluster"
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git ca-certificates \
